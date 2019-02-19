@@ -132,6 +132,10 @@ class LSTMEncoder(Seq2SeqEncoder):
         Describe what happens when self.bidirectional is set to True. 
         What is the difference between final_hidden_states and final_cell_states?
         '''
+        '''
+        If self.bidirectional is true, each direction's final hidden states and final cell states are concatenated in this step.
+        Final hidden states are a product of all the hidden layers, while the final cell states exist for each layer.
+        '''
         if self.bidirectional:
             def combine_directions(outs):
                 return torch.cat([outs[0: outs.size(0): 2], outs[1: outs.size(0): 2]], dim=2)
@@ -167,6 +171,10 @@ class AttentionLayer(nn.Module):
         ___QUESTION-1-DESCRIBE-B-START___
         Describe how the attention context vector is calculated. Why do we need to apply a mask to the attention scores?
         '''
+        '''
+        The attention context vector is the product of the attention weights and the output of the encoder. Then the result is squeezed to reduce any extraneous dimensions of size 1 from the result.
+        We need to apply a mask to the attention scores so that sentences of all lengths are handled correctly. It pads shorter sentences with end of sentence symbols and nullifies their loss so that the loss of the end of sentence symbols are not counted more than once.
+        '''
         if src_mask is not None:
             src_mask = src_mask.unsqueeze(dim=1)
             attn_scores.masked_fill_(src_mask, float('-inf'))
@@ -185,6 +193,11 @@ class AttentionLayer(nn.Module):
         ___QUESTION-1-DESCRIBE-C-START___
         How are attention scores calculated? What role does matrix multiplication (i.e. torch.bmm()) play 
         in aligning encoder and decoder representations?
+        '''
+        '''
+        Attention scores are calculated with the dot product (torch.bmm) between the target inputs and the encoder outputs. The hidden layer at time t is the encoder output.
+        Matrix multiplication is used to multiply the encoder output with the hidden layer to get the correct focus for a word at the time step h_t.
+        *******************FIX
         '''
         projected_encoder_out = self.src_projection(encoder_out).transpose(2, 1)
         attn_scores = torch.bmm(tgt_input.unsqueeze(dim=1), projected_encoder_out)
@@ -262,6 +275,11 @@ class LSTMDecoder(Seq2SeqDecoder):
         ___QUESTION-1-DESCRIBE-D-START___
         Describe how the decoder state is initialized. When is cached_state == None? What role does input_feed play?
         '''
+        '''
+        The decoder state is initialized as a series of zero vectors if there is no cached state. If there is a cached state, the decoder state is simply set to that previous state.
+        cached_state == None when on the very first word of a phrase or when not using incremental, auto-regressive generation.
+        input_feed is the output attentional vectors from the previous time step, and it is fed into the LSTM to pass along information about the previous alignment.
+        '''
         cached_state = utils.get_incremental_state(self, incremental_state, 'cached_state')
         if cached_state is not None:
             tgt_hidden_states, tgt_cell_states, input_feed = cached_state
@@ -295,6 +313,11 @@ class LSTMDecoder(Seq2SeqDecoder):
             ___QUESTION-1-DESCRIBE-E-START___
             How is attention integrated into the decoder? Why is the attention function given the previous 
             target state as one of its inputs? What is the purpose of the dropout layer?
+            '''
+            '''
+            Attention state is integrated into the decoder to correctly map the alignment between translations.
+            The attention function is given the previous target state as an input because it passes information from the previous alignment which can be used to come up with a proper alignment for the current word.
+            The dropout layer prevents high amounts of correlation between the different hidden units (co-adaptation). If not corrected for, this would lead to computational redundance and overfitting.
             '''
             if self.attention is None:
                 input_feed = tgt_hidden_states[-1]
