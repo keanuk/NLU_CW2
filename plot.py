@@ -6,12 +6,9 @@ import matplotlib.pyplot as plt
 
 
 def plotCorrelation(lengths1, lengths2):
-    axis = []
-    for i in range(len(lengths1)):
-        axis.append(i)
-
-    plt.scatter(axis, lengths1, c='r')
-    plt.scatter(axis, lengths2, c='b')
+    plt.scatter(lengths1, lengths2)
+    plt.xlabel('English')
+    plt.ylabel('Japanese')  
     plt.show()
 
 def plotLengths(lengths):
@@ -19,7 +16,7 @@ def plotLengths(lengths):
     for i in range(len(lengths)):
         axis.append(i)
 
-    plt.bar(axis, lengths)
+    plt.scatter(axis, lengths)
     plt.show()
 
 
@@ -30,7 +27,7 @@ def getTextData(filename):
     with open(filename, 'r') as file:
         text = file.read()
         for line in text.splitlines():
-            lineLength.append(len(line))
+            lineLength.append(len(line.split()))
             for word in line.split():
                 types.add(word)
                 tokens += 1  

@@ -126,6 +126,9 @@ def main(args):
             ___QUESTION-1-DESCRIBE-F-START___
             Describe what the following lines of code do.
             '''
+            '''
+            First, the encoder is constructed. Then the loss is computed using cross entropy. Then the error is propagated backwards through the network. After that, the gradient of the loss function is calculated using pytorch. Then the weights are updated based on the current gradient. Finally, the gradient of all model parameters is set to 0.
+            '''
             output, _ = model(sample['src_tokens'], sample['src_lengths'], sample['tgt_inputs'])
             loss = \
                 criterion(output.view(-1, output.size(-1)), sample['tgt_tokens'].view(-1)) / len(sample['src_lengths'])
