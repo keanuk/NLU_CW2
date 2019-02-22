@@ -129,7 +129,7 @@ class LSTMEncoder(Seq2SeqEncoder):
 
         '''
         ___QUESTION-1-DESCRIBE-A-START___
-        Describe what happens when self.bidirectional is set to True. 
+        Describe what happens when self.bidirectional is set to True.
         What is the difference between final_hidden_states and final_cell_states?
         '''
         '''
@@ -172,7 +172,7 @@ class AttentionLayer(nn.Module):
         Describe how the attention context vector is calculated. Why do we need to apply a mask to the attention scores?
         '''
         '''
-        The attention context vector is the product of the attention weights and the output of the encoder. Then the result is squeezed to reduce any extraneous dimensions of size 1 from the result.
+        The attention context vector is the dot product of the normalised attention scores and the encoder output. Then the result is squeezed to reduce any extraneous dimensions of size 1 from the result.
         We need to apply a mask to the attention scores so that sentences of all lengths are handled correctly. It pads shorter sentences with end of sentence symbols and nullifies their loss so that the loss of the end of sentence symbols are not counted more than once.
         '''
         if src_mask is not None:
@@ -191,12 +191,14 @@ class AttentionLayer(nn.Module):
 
         '''
         ___QUESTION-1-DESCRIBE-C-START___
-        How are attention scores calculated? What role does matrix multiplication (i.e. torch.bmm()) play 
+        How are attention scores calculated? What role does matrix multiplication (i.e. torch.bmm()) play
         in aligning encoder and decoder representations?
         '''
         '''
-        Attention scores are calculated with the dot product (torch.bmm) between the target inputs and the encoder outputs. The hidden layer at time t is the encoder output.
-        Matrix multiplication is used to multiply the encoder output with the hidden layer to get the correct focus for a word at the time step h_t.
+        Attention scores are calculated with the dot product (torch.bmm) between the first hidden layer of the decoder and the encoder outputs. [The hidden layer at time t is the encoder output.]
+        Dot product is an indicator of similarity and attention scores are calculated on the basis of similarity between these states. Matrix multiplication is used to assign the higher attention to the words with the highest similarity, and therefore to align similar words.
+        [Matrix multiplication is used to multiply the encoder output with the hidden layer to get the correct focus for a word at the time step h_t.]
+
         *******************FIX
         '''
         projected_encoder_out = self.src_projection(encoder_out).transpose(2, 1)
@@ -311,10 +313,11 @@ class LSTMDecoder(Seq2SeqDecoder):
 
             '''
             ___QUESTION-1-DESCRIBE-E-START___
-            How is attention integrated into the decoder? Why is the attention function given the previous 
+            How is attention integrated into the decoder? Why is the attention function given the previous
             target state as one of its inputs? What is the purpose of the dropout layer?
             '''
             '''
+            Attention is used along with
             Attention state is integrated into the decoder to correctly map the alignment between translations.
             The attention function is given the previous target state as an input because it passes information from the previous alignment which can be used to come up with a proper alignment for the current word.
             The dropout layer prevents high amounts of correlation between the different hidden units (co-adaptation). If not corrected for, this would lead to computational redundance and overfitting.
