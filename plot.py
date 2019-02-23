@@ -3,10 +3,13 @@ import sys
 import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 
-def plotCorrelation(lengths1, lengths2):
-    plt.scatter(lengths1, lengths2)
+def plotCorrelation(lengths1, lengths2, marker='o'):
+    # plt.scatter(lengths1, lengths2, marker='.')
+    sns.regplot(lengths1, lengths2)
+
     plt.xlabel('English')
     plt.ylabel('Japanese')  
     plt.show()
@@ -16,7 +19,11 @@ def plotLengths(lengths):
     for i in range(len(lengths)):
         axis.append(i)
 
-    plt.scatter(axis, lengths)
+    # plt.scatter(axis, lengths, marker='.')
+    sns.distplot(lengths)
+
+    plt.xlabel('Word Count')
+    plt.ylabel('Percentage of Lines')
     plt.show()
 
 

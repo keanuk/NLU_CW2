@@ -376,4 +376,4 @@ def base_architecture(args):
     args.decoder_dropout_in = getattr(args, 'decoder_dropout_in', 0.25)
     args.decoder_dropout_out = getattr(args, 'decoder_dropout_out', 0.25)
     args.decoder_use_attention = getattr(args, 'decoder_use_attention', 'True')
-    args.decoder_use_lexical_model = getattr(args, 'decoder_use_lexical_model', 'False'
+    args.decoder_use_lexical_model = getattr(args, 'decoder_use_lexical_model', 'False')
