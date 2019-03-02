@@ -250,6 +250,7 @@ class LSTMDecoder(Seq2SeqDecoder):
             pass
             # TODO: --------------------------------------------------------------------- /CUT
 
+
     def forward(self, tgt_inputs, encoder_out, incremental_state=None):
         """ Performs the forward pass through the instantiated model. """
         # Optionally, feed decoder input token-by-token
@@ -299,6 +300,7 @@ class LSTMDecoder(Seq2SeqDecoder):
         # Cache lexical context vectors per translation time-step
         lexical_contexts = []
 
+
         for j in range(tgt_time_steps):
             # Concatenate the current token embedding with output from previous time step (i.e. 'input feeding')
             lstm_input = torch.cat([tgt_embeddings[j, :, :], input_feed], dim=1)
@@ -333,6 +335,9 @@ class LSTMDecoder(Seq2SeqDecoder):
                     # TODO: --------------------------------------------------------------------- CUT
                     pass
                     # TODO: --------------------------------------------------------------------- /CUT
+                    # f_l = torch.tanh(torch.bmm(step_attn_weights, src_embeddings).squeeze(dim=1))
+                    # h_l = torch.tanh(torch.bmm(tgt_embeddings))
+
 
             input_feed = F.dropout(input_feed, p=self.dropout_out, training=self.training)
             rnn_outputs.append(input_feed)
