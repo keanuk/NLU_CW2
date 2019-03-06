@@ -262,6 +262,7 @@ class LSTMDecoder(Seq2SeqDecoder):
         src_embeddings = encoder_out['src_embeddings']
 
         src_out, src_hidden_states, src_cell_states = encoder_out['src_out']
+        #print("src_hidden_states: ", src_hidden_states.size(), "\nsrc_cell_states: ", src_cell_states.size())
         src_mask = encoder_out['src_mask']
         src_time_steps = src_out.size(0)
 
@@ -335,8 +336,20 @@ class LSTMDecoder(Seq2SeqDecoder):
                     # TODO: --------------------------------------------------------------------- CUT
                     pass
                     # TODO: --------------------------------------------------------------------- /CUT
-                    # f_l = torch.tanh(torch.bmm(step_attn_weights, src_embeddings).squeeze(dim=1))
-                    # h_l = torch.tanh(torch.bmm(tgt_embeddings))
+
+                    # print("\n\nStep Attention Weights: ", torch.unsqueeze(step_attn_weights, 1).size(), "\n\nSource Embeddings: ", src_embeddings.size(), "\n")
+
+                    f_t = torch.tanh(torch.bmm(torch.transpose(torch.unsqueeze(step_attn_weights, 1), 0, 2), src_embeddings))
+
+                    # print("\nf size: ", f_t.size())
+                    
+                    W = nn.Linear(f_t.size()[2], f_t.size()[2])
+
+                    # print("\nW size: ", W, "\n")
+
+                    h_t = torch.tanh(W(f_t)) + f_t
+
+                    lexical_contexts.append(h_t)
 
 
             input_feed = F.dropout(input_feed, p=self.dropout_out, training=self.training)
@@ -360,6 +373,24 @@ class LSTMDecoder(Seq2SeqDecoder):
             # __QUESTION: Incorporate the LEXICAL MODEL into the prediction of target tokens here
             pass
             # TODO: --------------------------------------------------------------------- /CUT
+
+            print("\n\nDecoder output size: ", decoder_output.size(), "\n\n")
+            
+            lexicalTranslation = torch.cat(lexical_contexts, dim=1)
+
+            # lexicalTranslation = lexicalTranslation.transpose(0, 1)
+
+            print("Lexical translation size: ", lexicalTranslation.size())
+
+            W = nn.Linear(lexicalTranslation.size()[2], decoder_output.size()[2])
+
+            print("\n\nW size: ", W, "\n\n")
+
+            lexicalTranslation = W(lexicalTranslation)
+
+            print("Lexical translation size: ", lexicalTranslation.size())
+
+            p_y = F.softmax(decoder_output + lexicalTranslation)
 
         return decoder_output, attn_weights
 
