@@ -248,7 +248,8 @@ class LSTMDecoder(Seq2SeqDecoder):
             # __QUESTION: Add parts of decoder architecture corresponding to the LEXICAL MODEL here
             pass
             # TODO: --------------------------------------------------------------------- /CUT
-            self.W_f = nn.Linear(embed_dim, embed_dim)
+            self.W_f = nn.Linear(embed_dim, hidden_size)
+            self.W_2 = nn.Linear(embed_dim, hidden_size)
             self.W_l = nn.Linear(hidden_size, len(dictionary))
             # print("\n++++++++++++++++\nembedded dimensions: ", embed_dim, "\nhidden size: ", hidden_size, "\nDictionary length: ", len(dictionary))
 
@@ -340,19 +341,19 @@ class LSTMDecoder(Seq2SeqDecoder):
 
                     # print("============================================")
 
-                    # print("source embeddings: ", torch.squeeze(src_embeddings).size(), "\nstep attn weights: ", step_attn_weights.size(), "\n")
+                    # print("source embeddings: ", src_embeddings.size(), "\nstep attn weights: ", step_attn_weights.size(), "\n")
                     
-                    f_t = torch.tanh(torch.mm(step_attn_weights, torch.squeeze(src_embeddings)))
+                    f_t = torch.tanh(torch.bmm(torch.unsqueeze(step_attn_weights, 0), torch.transpose(src_embeddings, 0, 1)))
 
                     # print("\nf size: ", f_t.size())
                     
                     # print("\nW size: ", self.W_f, "\n")
 
-                    h_t = torch.cat((torch.tanh(self.W_f(f_t)), f_t), 1)
+                    h_t = torch.tanh(self.W_f(f_t)) + self.W_2(f_t)
 
-                    # print("\nh size: ", torch.unsqueeze(h_t, 1).size())
+                    # print("\nh size: ", h_t.size())
 
-                    lexical_contexts.append(torch.unsqueeze(h_t, 1))
+                    lexical_contexts.append(h_t)
 
 
             input_feed = F.dropout(input_feed, p=self.dropout_out, training=self.training)
@@ -363,13 +364,17 @@ class LSTMDecoder(Seq2SeqDecoder):
         utils.set_incremental_state(
             self, incremental_state, 'cached_state', (tgt_hidden_states, tgt_cell_states, input_feed))
 
+        # print("\n**************\nRNN output size: ", len(rnn_outputs))
+
         # Collect outputs across time steps
         decoder_output = torch.cat(rnn_outputs, dim=0).view(tgt_time_steps, batch_size, self.hidden_size)
+
+        # print("\n**************\nDecoder 1 output size: ", decoder_output.size())
 
         # Transpose batch back: [tgt_time_steps, batch_size, num_features] -> [batch_size, tgt_time_steps, num_features]
         decoder_output = decoder_output.transpose(0, 1)
 
-        # print("\n**************\nDecoder output size: ", decoder_output.size())
+        # print("\n**************\nDecoder 2 output size: ", decoder_output.size())
 
         # Final projection
         decoder_output = self.final_projection(decoder_output)
