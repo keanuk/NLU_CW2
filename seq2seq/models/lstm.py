@@ -248,8 +248,9 @@ class LSTMDecoder(Seq2SeqDecoder):
             # __QUESTION: Add parts of decoder architecture corresponding to the LEXICAL MODEL here
             pass
             # TODO: --------------------------------------------------------------------- /CUT
-            self.W_f = nn.Linear(embed_dim, hidden_size)
-            self.W_2 = nn.Linear(embed_dim, hidden_size)
+            #self.W_f = nn.Linear(embed_dim, hidden_size)
+            #self.W_2 = nn.Linear(embed_dim, hidden_size)
+            self.W_f=nn.Linear(embed_dim, embed_dim, bias=False)
             self.W_l = nn.Linear(hidden_size, len(dictionary))
             # print("\n++++++++++++++++\nembedded dimensions: ", embed_dim, "\nhidden size: ", hidden_size, "\nDictionary length: ", len(dictionary))
 
@@ -342,14 +343,14 @@ class LSTMDecoder(Seq2SeqDecoder):
                     # print("============================================")
 
                     # print("source embeddings: ", src_embeddings.size(), "\nstep attn weights: ", step_attn_weights.size(), "\n")
-                    
+
                     f_t = torch.tanh(torch.bmm(torch.unsqueeze(step_attn_weights, 0), torch.transpose(src_embeddings, 0, 1)))
 
                     # print("\nf size: ", f_t.size())
-                    
+
                     # print("\nW size: ", self.W_f, "\n")
 
-                    h_t = torch.tanh(self.W_f(f_t)) + self.W_2(f_t)
+                    h_t = torch.tanh(self.W_f(f_t)) + f_t
 
                     # print("\nh size: ", h_t.size())
 
@@ -383,11 +384,11 @@ class LSTMDecoder(Seq2SeqDecoder):
 
         if self.use_lexical_model:
             # __QUESTION: Incorporate the LEXICAL MODEL into the prediction of target tokens here
-            pass
+
             # TODO: --------------------------------------------------------------------- /CUT
 
             # print("\n\nDecoder output size: ", decoder_output.size(), "\n\n")
-            
+
             lexicalTranslation = torch.cat(lexical_contexts, dim=1)
 
             # print("Lexical translation size: ", lexicalTranslation.size())
