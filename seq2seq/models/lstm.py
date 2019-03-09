@@ -249,7 +249,8 @@ class LSTMDecoder(Seq2SeqDecoder):
             pass
             # TODO: --------------------------------------------------------------------- /CUT
             self.W_f = nn.Linear(embed_dim, embed_dim)
-            self.W_o = nn.Linear(embed_dim, len(dictionary))
+            self.W_l = nn.Linear(hidden_size, len(dictionary))
+            # print("\n++++++++++++++++\nembedded dimensions: ", embed_dim, "\nhidden size: ", hidden_size, "\nDictionary length: ", len(dictionary))
 
 
     def forward(self, tgt_inputs, encoder_out, incremental_state=None):
@@ -347,7 +348,7 @@ class LSTMDecoder(Seq2SeqDecoder):
                     
                     # print("\nW size: ", self.W_f, "\n")
 
-                    h_t = torch.tanh(self.W_f(f_t)) + f_t
+                    h_t = torch.cat((torch.tanh(self.W_f(f_t)), f_t), 1)
 
                     # print("\nh size: ", torch.unsqueeze(h_t, 1).size())
 
@@ -368,8 +369,12 @@ class LSTMDecoder(Seq2SeqDecoder):
         # Transpose batch back: [tgt_time_steps, batch_size, num_features] -> [batch_size, tgt_time_steps, num_features]
         decoder_output = decoder_output.transpose(0, 1)
 
+        # print("\n**************\nDecoder output size: ", decoder_output.size())
+
         # Final projection
         decoder_output = self.final_projection(decoder_output)
+
+        # print("\n**************\nFinal decoder output size: ", decoder_output.size())
 
         if self.use_lexical_model:
             # __QUESTION: Incorporate the LEXICAL MODEL into the prediction of target tokens here
@@ -382,9 +387,9 @@ class LSTMDecoder(Seq2SeqDecoder):
 
             # print("Lexical translation size: ", lexicalTranslation.size())
 
-            # print("\n\nW size: ", self.W_o, "\n\n")
+            # print("\n\nW size: ", self.W_l, "\n\n")
 
-            lexicalTranslation = self.W_o(lexicalTranslation)
+            lexicalTranslation = self.W_l(lexicalTranslation)
 
             # print("Final lt size: ", lexicalTranslation.size())
 
