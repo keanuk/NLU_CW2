@@ -249,8 +249,8 @@ class LSTMDecoder(Seq2SeqDecoder):
             pass
             # TODO: --------------------------------------------------------------------- /CUT
             #self.W_f = nn.Linear(embed_dim, hidden_size)
-            #self.W_2 = nn.Linear(embed_dim, hidden_size)
-            self.W_f=nn.Linear(embed_dim, embed_dim, bias=False)
+            self.W_2 = nn.Linear(embed_dim, hidden_size, bias=False)
+            self.W_f = nn.Linear(embed_dim, hidden_size, bias=False)
             self.W_l = nn.Linear(hidden_size, len(dictionary))
             # print("\n++++++++++++++++\nembedded dimensions: ", embed_dim, "\nhidden size: ", hidden_size, "\nDictionary length: ", len(dictionary))
 
@@ -350,7 +350,7 @@ class LSTMDecoder(Seq2SeqDecoder):
 
                     # print("\nW size: ", self.W_f, "\n")
 
-                    h_t = torch.tanh(self.W_f(f_t)) + f_t
+                    h_t = torch.tanh(self.W_f(f_t)) + self.W_2(f_t)
 
                     # print("\nh size: ", h_t.size())
 
