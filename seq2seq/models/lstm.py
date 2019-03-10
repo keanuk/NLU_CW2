@@ -348,13 +348,7 @@ class LSTMDecoder(Seq2SeqDecoder):
 
                     # print("\nf size: ", f_t.size())
 
-                    # print("\nW size: ", self.W_f, "\n")
-
-                    h_t = torch.tanh(self.W_f(f_t)) + self.W_2(f_t)
-
-                    # print("\nh size: ", h_t.size())
-
-                    lexical_contexts.append(h_t)
+                    lexical_contexts.append(f_t)
 
 
             input_feed = F.dropout(input_feed, p=self.dropout_out, training=self.training)
@@ -387,21 +381,22 @@ class LSTMDecoder(Seq2SeqDecoder):
 
             # TODO: --------------------------------------------------------------------- /CUT
 
+            # print("---------------------------------------------------------------------\n")
+
             # print("\n\nDecoder output size: ", decoder_output.size(), "\n\n")
 
-            lexicalTranslation = torch.cat(lexical_contexts, dim=1)
+            # print("Lexical context length: ", len(lexical_contexts))
 
-            # print("Lexical translation size: ", lexicalTranslation.size())
+            # for c in lexical_contexts:
+            #     print("Size of lexical context: ", c.size())
 
-            # print("\n\nW size: ", self.W_l, "\n\n")
+            lc = torch.cat(lexical_contexts, dim=1)
 
-            lexicalTranslation = self.W_l(lexicalTranslation)
+            h_t = torch.tanh(self.W_f(lc)) + self.W_2(lc)
 
-            # print("Final lt size: ", lexicalTranslation.size())
+            # print("\nh size: ", h_t.size())
 
-            # print("Decoder size before LT: ", decoder_output.size())
-
-            decoder_output = decoder_output + lexicalTranslation
+            decoder_output = decoder_output + self.W_l(h_t)
 
             # print("Decoder size after LT: ", decoder_output.size())
 
