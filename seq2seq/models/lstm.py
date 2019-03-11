@@ -248,11 +248,9 @@ class LSTMDecoder(Seq2SeqDecoder):
             # __QUESTION: Add parts of decoder architecture corresponding to the LEXICAL MODEL here
             pass
             # TODO: --------------------------------------------------------------------- /CUT
-            self.W_2 = nn.Linear(embed_dim, hidden_size, bias=False)
-            self.W_f = nn.Linear(embed_dim, hidden_size, bias=False)
-            self.W_l = nn.Linear(hidden_size, len(dictionary))
-            # print("\n++++++++++++++++\nembedded dimensions: ", embed_dim, "\nhidden size: ", hidden_size, "\nDictionary length: ", len(dictionary))
-
+            # self.W_2 = nn.Linear(embed_dim, hidden_size, bias=False)
+            self.W_f = nn.Linear(embed_dim, embed_dim, bias=False)
+            self.W_l = nn.Linear(embed_dim, len(dictionary))
 
     def forward(self, tgt_inputs, encoder_out, incremental_state=None):
         """ Performs the forward pass through the instantiated model. """
@@ -384,12 +382,9 @@ class LSTMDecoder(Seq2SeqDecoder):
 
             # print("Lexical context length: ", len(lexical_contexts))
 
-            # for c in lexical_contexts:
-            #     print("Size of lexical context: ", c.size())
-
             lc = torch.cat(lexical_contexts, dim=1)
 
-            h_t = torch.tanh(self.W_f(lc)) + self.W_2(lc)
+            h_t = torch.tanh(self.W_f(lc)) + lc
 
             decoder_output = decoder_output + self.W_l(h_t)
 
