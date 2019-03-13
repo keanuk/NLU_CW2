@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def plotCorrelation(lengths1, lengths2, marker='o'):
+def plotCorrelation(lengths1, lengths2, marker='.'):
     # plt.scatter(lengths1, lengths2, marker='.')
     sns.regplot(lengths1, lengths2)
 
@@ -23,7 +23,7 @@ def plotLengths(lengths):
     sns.distplot(lengths)
 
     plt.xlabel('Word Count')
-    plt.ylabel('Percentage of Lines')
+    plt.ylabel('Distribution of Lines')
     plt.show()
 
 
