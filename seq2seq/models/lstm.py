@@ -133,8 +133,8 @@ class LSTMEncoder(Seq2SeqEncoder):
         What is the difference between final_hidden_states and final_cell_states?
         '''
         '''
-        If self.bidirectional is true, each direction's final hidden states and final cell states are concatenated in this step.
-        Final hidden states are a product of all the hidden layers, while the final cell states exist for each layer.
+        If self.bidirectional is true, there will be two directions processing an input for each layer of the encoder. Each direction's final hidden states and final cell states are then concatenated in this step. 
+        final_hidden_states is a combined matrix consisting of all hidden states of an input. Hidden states are the sum of multiple inputs and they are passed through a sigmoid function. They are used to maintain general meaning over a longer term. final_cell_states is a combined matrix consisting of all cell states of an input. Cell states are linear and have no activation function. They are used to remember smaller specific portions of an input.
         '''
         if self.bidirectional:
             def combine_directions(outs):
@@ -172,7 +172,7 @@ class AttentionLayer(nn.Module):
         Describe how the attention context vector is calculated. Why do we need to apply a mask to the attention scores?
         '''
         '''
-        The attention context vector is the dot product of the normalised attention scores and the encoder output. Then the result is squeezed to reduce any extraneous dimensions of size 1 from the result.
+        The attention context vector is calculated from the dot product of the normalised attention scores and the encoder output. Then the result is squeezed to reduce any extraneous dimensions of size 1 from the result.
         We need to apply a mask to the attention scores so that sentences of all lengths are handled correctly. It pads shorter sentences with end of sentence symbols and nullifies their loss so that the loss of the end of sentence symbols are not counted more than once.
         '''
         if src_mask is not None:
@@ -195,11 +195,8 @@ class AttentionLayer(nn.Module):
         in aligning encoder and decoder representations?
         '''
         '''
-        Attention scores are calculated with the dot product (torch.bmm) between the first hidden layer of the decoder and the encoder outputs. [The hidden layer at time t is the encoder output.]
-        Dot product is an indicator of similarity and attention scores are calculated on the basis of similarity between these states. Matrix multiplication is used to assign the higher attention to the words with the highest similarity, and therefore to align similar words.
-        [Matrix multiplication is used to multiply the encoder output with the hidden layer to get the correct focus for a word at the time step h_t.]
-
-        *******************FIX
+        Attention scores are calculated with the dot product (torch.bmm) between the first hidden layer of the decoder and the encoder outputs. The hidden layer at time t is the encoder output.
+        Matrix multiplication is used to multiply the encoder output with the hidden layer. This gives the model a better idea of what the correct attention for a word at the time step t is.
         '''
         projected_encoder_out = self.src_projection(encoder_out).transpose(2, 1)
         attn_scores = torch.bmm(tgt_input.unsqueeze(dim=1), projected_encoder_out)
@@ -248,7 +245,7 @@ class LSTMDecoder(Seq2SeqDecoder):
             # __QUESTION: Add parts of decoder architecture corresponding to the LEXICAL MODEL here
             pass
             # TODO: --------------------------------------------------------------------- /CUT
-            # self.W_2 = nn.Linear(embed_dim, hidden_size, bias=False)
+
             self.W_f = nn.Linear(embed_dim, embed_dim, bias=False)
             self.W_l = nn.Linear(embed_dim, len(dictionary))
 
@@ -281,8 +278,8 @@ class LSTMDecoder(Seq2SeqDecoder):
         '''
         '''
         The decoder state is initialized as a series of zero vectors if there is no cached state. If there is a cached state, the decoder state is simply set to that previous state.
-        cached_state == None when on the very first word of a phrase or when not using incremental, auto-regressive generation.
-        input_feed is the output attentional vectors from the previous time step, and it is fed into the LSTM to pass along information about the previous alignment.
+        cached_state == None when not using incremental, auto-regressive generation or when there is no cached state to pick up from.
+        input_feed is the output attentional vectors from the previous time step, and it is fed into the LSTM to pass along information about the previous attention.
         '''
         cached_state = utils.get_incremental_state(self, incremental_state, 'cached_state')
         if cached_state is not None:
@@ -320,9 +317,8 @@ class LSTMDecoder(Seq2SeqDecoder):
             target state as one of its inputs? What is the purpose of the dropout layer?
             '''
             '''
-            Attention is used along with
-            Attention state is integrated into the decoder to correctly map the alignment between translations.
-            The attention function is given the previous target state as an input because it passes information from the previous alignment which can be used to come up with a proper alignment for the current word.
+            Attention is integrated into the decoder as an input, this is represented by input_feed in the code. 
+            The attention function is given the previous target state as an input because that state will be propagated across the input sequence to retain information from each input. The combination of data from all target states allows the proper attention to be calculated.
             The dropout layer prevents high amounts of correlation between the different hidden units (co-adaptation). If not corrected for, this would lead to computational redundance and overfitting.
             '''
             if self.attention is None:
@@ -337,12 +333,7 @@ class LSTMDecoder(Seq2SeqDecoder):
                     pass
                     # TODO: --------------------------------------------------------------------- /CUT
 
-                    # print("============================================")
-
-                    # print("source embeddings: ", src_embeddings.size(), "\nstep attn weights: ", step_attn_weights.size(), "\n")
-
                     f_t = torch.tanh(torch.bmm(torch.unsqueeze(step_attn_weights, 0), torch.transpose(src_embeddings, 0, 1)))
-
                     lexical_contexts.append(f_t)
 
 
@@ -376,16 +367,8 @@ class LSTMDecoder(Seq2SeqDecoder):
 
             # TODO: --------------------------------------------------------------------- /CUT
 
-            # print("---------------------------------------------------------------------\n")
-
-            # print("\n\nDecoder output size: ", decoder_output.size(), "\n\n")
-
-            # print("Lexical context length: ", len(lexical_contexts))
-
             lc = torch.cat(lexical_contexts, dim=1)
-
             h_t = torch.tanh(self.W_f(lc)) + lc
-
             decoder_output = decoder_output + self.W_l(h_t)
 
         return decoder_output, attn_weights
